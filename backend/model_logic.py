@@ -20,16 +20,12 @@ def extract_features(password):
     
     for i in range(len(password) - 1):
         char1, char2 = password[i], password[i+1]
-        
         if char1 in KEY_MAP and char2 in KEY_MAP:
             p1, p2 = KEY_MAP[char1], KEY_MAP[char2]
-            
             dist = np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
             distances.append(dist)
-            
             if 0.9 <= dist <= 1.3:
                 sequential_moves += 1
-                
     avg_dist = np.mean(distances) if distances else 0
     length = len(password)
     unique_ratio = len(set(password)) / length if length > 0 else 0
