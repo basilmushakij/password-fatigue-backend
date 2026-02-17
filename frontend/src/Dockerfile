@@ -1,3 +1,5 @@
 FROM node:18-alpine
 WORKDIR /app
-CMD ["npx", "-y", "http-server"]
+COPY package.json .
+RUN npm install
+CMD ["npm", "start"]
