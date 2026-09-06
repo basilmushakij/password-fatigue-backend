@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Audit</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#141414;
+    --muted:#6b6b6b;
+    --faint:#a8a8a8;
+    --line:#e6e6e4;
+    --danger:#b0362c;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ transition: none !important; animation: none !important; }
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Space Grotesk', sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:14vh 24px 10vh;
+  }
+
+  main{ width:100%; max-width:400px; }
+
+  h1{
+    font-size:22px;
+    font-weight:500;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    font-size:14px;
+    color:var(--muted);
+    margin:0 0 40px;
+    line-height:1.5;
+    max-width:34ch;
+  }
+
+  .field-label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+
+  .password-row{ display:flex; align-items:flex-end; gap:10px; margin-bottom:22px; }
+
+  .password-input{
+    flex:1;
+    border:none;
+    border-bottom:1px solid var(--ink);
+    background:transparent;
+    padding:6px 0;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:16px;
+    color:var(--ink);
+  }
+  .password-input::placeholder{ color:var(--faint); }
+  .password-input:focus{ outline:none; border-bottom-width:2px; }
+
+  .toggle-link{
+    background:none;
+    border:none;
+    padding:6px 0;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:12px;
+    color:var(--muted);
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .toggle-link:hover{ color:var(--ink); }
+  .toggle-link:focus-visible, .password-input:focus-visible, .btn:focus-visible{
+    outline:2px solid var(--ink);
+    outline-offset:3px;
+  }
+
+  .btn{
+    width:100%;
+    border:1px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    padding:12px;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .btn:hover:not(:disabled){ background:var(--ink); color:#fff; }
+  .btn:disabled{ color:var(--faint); border-color:var(--line); cursor:default; }
+
+  .msg{
+    font-size:13px;
+    color:var(--danger);
+    margin-top:16px;
+    line-height:1.5;
+  }
+
+  .report{ margin-top:44px; }
+  .report-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:12px 0;
+    border-top:1px solid var(--line);
+  }
+  .report-row:last-child{ border-bottom:1px solid var(--line); }
+  .report-label{ font-size:13px; color:var(--muted); }
+  .report-val{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+  }
+  .report-val.risk-high{ color:var(--danger); font-weight:500; }
+
+  .status{
+    margin-top:56px;
+    font-size:11px;
+    color:var(--faint);
+  }
+  .status .offline{ color:var(--danger); }
+</style>
+</head>
+<body>
+
+<main>
+  <h1>Password audit</h1>
+  <p class="lede">Check how easy a password would be to guess from typing patterns alone.</p>
+
+  <label class="field-label" for="pwInput">Password</label>
+  <div class="password-row">
+    <input type="password" class="password-input" id="pwInput" placeholder="Type a password" autocomplete="off" spellcheck="false">
+    <button class="toggle-link" id="toggleBtn" type="button">show</button>
+  </div>
+
+  <button class="btn" id="analyzeBtn" type="button">Check</button>
+
+  <div id="msgArea"></div>
+
+  <div class="report" id="reportArea" style="display:none;">
+    <div class="report-row">
+      <span class="report-label">Risk</span>
+      <span class="report-val" id="riskVal">—</span>
+    </div>
+    <div class="report-row" id="distRow">
+      <span class="report-label">Key distance</span>
+      <span class="report-val" id="distVal">—</span>
+    </div>
+    <div class="report-row" id="uniqueRow">
+      <span class="report-label">Unique ratio</span>
+      <span class="report-val" id="uniqueVal">—</span>
+    </div>
+  </div>
+
+  <div class="status">
+    <span>Backend <span id="statusBackend">checking…</span></span>
+  </div>
+</main>
+
+<script>
+(function(){
+  const RISK = {
+    0: { word: 'High', className: 'risk-high' },
+    1: { word: 'Medium', className: '' },
+    2: { word: 'Low', className: '' }
+  };
+
+  const el = {
+    pwInput: document.getElementById('pwInput'),
+    toggleBtn: document.getElementById('toggleBtn'),
+    analyzeBtn: document.getElementById('analyzeBtn'),
+    msgArea: document.getElementById('msgArea'),
+    reportArea: document.getElementById('reportArea'),
+    riskVal: document.getElementById('riskVal'),
+    distRow: document.getElementById('distRow'),
+    distVal: document.getElementById('distVal'),
+    uniqueRow: document.getElementById('uniqueRow'),
+    uniqueVal: document.getElementById('uniqueVal'),
+    statusBackend: document.getElementById('statusBackend')
+  };
+
+  el.toggleBtn.addEventListener('click', () => {
+    const showing = el.pwInput.type === 'text';
+    el.pwInput.type = showing ? 'password' : 'text';
+    el.toggleBtn.textContent = showing ? 'show' : 'hide';
+  });
+
+  function showMessage(text){ el.msgArea.innerHTML = '<p class="msg">' + text + '</p>'; }
+  function clearMessage(){ el.msgArea.innerHTML = ''; }
+
+  function setBackendStatus(online){
+    el.statusBackend.textContent = online ? 'online' : 'offline';
+    el.statusBackend.className = online ? '' : 'offline';
+  }
+
+  async function checkBackend(){
+    try{
+      const res = await fetch('http://localhost:8000/health');
+      setBackendStatus(res.ok);
+    } catch(err){
+      setBackendStatus(false);
+    }
+  }
+  checkBackend();
+
+  async function analyze(){
+    const password = el.pwInput.value;
+    if(!password){
+      showMessage("Type a password first — there's nothing to check yet.");
+      return;
+    }
+    clearMessage();
+    el.reportArea.style.display = 'none';
+    el.analyzeBtn.disabled = true;
+    el.analyzeBtn.textContent = 'Checking';
+
+    try{
+      const res = await fetch('http://localhost:8000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      if(!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      const risk = RISK[data.risk_level] ?? RISK[1];
+
+      el.riskVal.textContent = risk.word;
+      el.riskVal.className = 'report-val ' + risk.className;
+
+      if(typeof data.avg_dist === 'number'){
+        el.distVal.textContent = data.avg_dist.toFixed(2);
+        el.distRow.style.display = 'flex';
+      } else {
+        el.distRow.style.display = 'none';
+      }
+      if(typeof data.unique_ratio === 'number'){
+        el.uniqueVal.textContent = Math.round(data.unique_ratio * 100) + '%';
+        el.uniqueRow.style.display = 'flex';
+      } else {
+        el.uniqueRow.style.display = 'none';
+      }
+      el.reportArea.style.display = 'block';
+      setBackendStatus(true);
+    } catch(err){
+      showMessage("Can't reach the audit service. Check it's running on port 8000.");
+      setBackendStatus(false);
+    } finally {
+      el.analyzeBtn.disabled = false;
+      el.analyzeBtn.textContent = 'Check';
+    }
+  }
+
+  el.analyzeBtn.addEventListener('click', analyze);
+  el.pwInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') analyze(); });
+})();
+</script>
+
+</body>
+</html>
