@@ -4,7 +4,7 @@ A small web app that estimates how risky a password is, using only **how it is t
 It does not look at a list of leaked passwords. It looks at patterns such as keys that sit next to each other
 (`qwerty`, `asdf`, `1234`) and repeated characters.
 
-I presented this project to my instructor under the title *AI Password Risk Detection*
+This is a **mini project** from my course. I presented it to my instructor under the title *AI Password Risk Detection*
 (the repo is named after the idea of "password fatigue": people pick easy-to-type passwords when they are tired of making new ones).
 
 ## How it works
