@@ -24,6 +24,20 @@ This is a **mini project** from my course. I presented it to my instructor under
 
 Only lower-case characters on a US QWERTY layout are mapped. Characters outside `KEY_MAP` (for example Thai letters) are skipped when measuring distance.
 
+## What "risk" means here
+"Risk" in this project means **how lazy the typing pattern looks** (keys next to each other, many repeats), not how strong the password is in general.
+A password like `password` is very common, but it is not typed in a lazy pattern on the keyboard, so the model does not call it High.
+
+A few passwords I tried by hand (not a measured accuracy, just examples to show what the model looks at):
+
+| Password | Risk level |
+|----------|-----------|
+| `qwerty`, `123456`, `aaaaaa` | 0 (High) |
+| `password`, `Summer2024` | 1 (Medium) |
+| `Xk9#mP2$vL7q` | 2 (Low) |
+
+If I continued this project, I would add a list of common passwords as an extra feature, so that words like `password` are caught too.
+
 ## Run it
 You need Docker.
 
@@ -72,8 +86,8 @@ So the number shows that the model fits the dataset's rule, not that it can find
 ## Limitations
 - **The training script and training data are not in this repo**, only the trained model file. I can't show here how the model was trained,
   so treat the output as a rough indication, not a security guarantee.
-- It only measures typing patterns. A password can look "Low" risk here and still be weak (for example a common word with unusual keys)
-  or be already leaked.
+- It only measures typing patterns. A password can look "Medium" or "Low" here and still be weak (for example `password`, a very common word
+  whose keys are far apart) or be already leaked.
 - Only an English QWERTY layout is supported.
 - `model.pkl` is a pickle file (loaded with `joblib`). Loading pickle files from other people can run code, so only load models you trust.
   `scikit-learn` is pinned to 1.6.1 because the model was saved with that version.
