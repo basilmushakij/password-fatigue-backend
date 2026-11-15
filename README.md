@@ -42,20 +42,36 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -
 # {"risk_level": 0, "avg_dist": ..., "unique_ratio": ...}
 ```
 
+The password must be 1-128 characters. Anything else (empty, too long, missing field) gets HTTP 422 and never reaches the model.
+
+### Tests
+```bash
+cd backend
+pip install pytest httpx   # plus requirements.txt
+python -m pytest -q
+```
+6 tests cover `/health`, a normal `/predict`, the three kinds of bad input, and the CORS rule.
+
 ## Project layout
 ```text
 backend/
   main.py          FastAPI app (/health, /predict)
   model_logic.py   Keyboard map and feature extraction
+  test_api.py      Tests for the API
   model/model.pkl  Trained model
 frontend/src/
   index.html       Single static page, no build step
 docker-compose.yml
 ```
 
+## Key finding about the accuracy
+In our class notebook the model scored **99.72% on the test set (100% on the training set)**, using a 30,008-row dataset made for the project.
+That dataset is not a set of real leaked passwords, and I never checked its labels against real password strength.
+So the number shows that the model fits the dataset's rule, not that it can find weak real-world passwords. I do not use 99.72% as a measure of real accuracy.
+
 ## Limitations
 - **The training script and training data are not in this repo**, only the trained model file. I can't show here how the model was trained,
-  and I did not measure and publish its accuracy, so treat the output as a rough indication, not a security guarantee.
+  so treat the output as a rough indication, not a security guarantee.
 - It only measures typing patterns. A password can look "Low" risk here and still be weak (for example a common word with unusual keys)
   or be already leaked.
 - Only an English QWERTY layout is supported.
@@ -65,4 +81,4 @@ docker-compose.yml
 ## Security notes
 This is a demo, not a production service:
 - Do **not** type a real password. It is sent to the backend as plain text over HTTP, and the frontend is hard-coded to `http://localhost:8000`.
-- CORS allows every origin and there is no login or rate limit.
+- CORS only allows the demo frontend (`http://localhost:4000`). There is no login or rate limit.
