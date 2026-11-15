@@ -24,6 +24,13 @@ This is a **mini project** from my course. I presented it to my instructor under
 
 Only lower-case characters on a US QWERTY layout are mapped. Characters outside `KEY_MAP` (for example Thai letters) are skipped when measuring distance.
 
+## What I focused on: connecting a model to a web app
+The model itself was trained in our class notebook. My part was the application around it: a FastAPI backend that loads the model once,
+checks the input, turns the password into features, returns the prediction as JSON, and a Docker Compose setup that runs the backend and the page together.
+
+The model is one replaceable piece. Another project could use the same structure with a different model and different input/output fields:
+change `model.pkl`, `extract_features()` in `model_logic.py` and the fields in `main.py`. The Docker setup, validation, CORS and tests stay the same shape.
+
 ## What "risk" means here
 "Risk" in this project means **how lazy the typing pattern looks** (keys next to each other, many repeats), not how strong the password is in general.
 A password like `password` is very common, but it is not typed in a lazy pattern on the keyboard, so the model does not call it High.
@@ -82,6 +89,10 @@ docker-compose.yml
 In our class notebook the model scored **99.72% on the test set (100% on the training set)**, using a 30,008-row dataset made for the project.
 That dataset is not a set of real leaked passwords, and I never checked its labels against real password strength.
 So the number shows that the model fits the dataset's rule, not that it can find weak real-world passwords. I do not use 99.72% as a measure of real accuracy.
+
+I also checked the model from the outside: I gave it many made-up passwords and fitted a tiny decision tree (3 levels) to its answers.
+Rules on `length` and `seq_ratio` alone reproduce about 98% of its predictions. So the labels were probably made by a simple rule, and the model learned that rule.
+This is an inference from the model's behaviour. I could not check it against the original training data, which I no longer have.
 
 ## Limitations
 - **The training script and training data are not in this repo**, only the trained model file. I can't show here how the model was trained,
